@@ -128,13 +128,21 @@ CH() { docker exec -i nsm-clickhouse clickhouse-client "$@"; }   # the lab's con
   ```
 - [ ] Add the entry to [rules/README.md](../rules/README.md) **in the same commit**, including the evasion note.
 
-## 8. Validate — `scripts/validate-rules.sh` (Phase 4)
+## 8. Validate — `scripts/validate-rules.sh`
 
-- [ ] Add the case to `rules/expected.yaml`: which rule must fire, how many times, on which dataset.
-- [ ] `scripts/validate-rules.sh` converts every rule to SQL, runs it against **every** loaded dataset, and reports
-      PASS/FAIL plus false-positive candidates — a rule firing on a dataset where it was not expected.
-- [ ] Datasets for other techniques are the control group: a rule for credential theft firing on a persistence dataset
-      is a finding, not a coincidence. Resolve every one before moving on.
+- [ ] Add the rule to `rules/expected.yaml`: which dataset it must fire on, how many times, and what that proves.
+      A rule with no expectations that fires anywhere is reported as a false-positive candidate — declaring where a
+      rule belongs is part of writing it.
+- [ ] `scripts/validate-rules.sh` lints every rule (required Sigma fields, UUID id, ATT&CK tag, named false positives,
+      an entry in `rules/README.md`), converts it to SQL, runs it against **every** loaded dataset, and reports
+      PASS/FAIL, false-positive candidates, untested rules and a rule × dataset coverage matrix.
+- [ ] Datasets for other techniques are the control group: a credential-theft rule firing on an execution recording is
+      a finding, not a coincidence. Resolve every one before moving on.
+- [ ] The backend refuses what it cannot translate — aggregations (`| count() > 5`), `near`, timeframes, base64 and
+      utf16 modifiers. If a rule needs those, it still belongs in `rules/sigma/` for a real SIEM, but say in
+      `rules/README.md` that this repository cannot validate it.
+- [ ] `scripts/sigma-to-sql.py <rule> --run` shows the matching events while you are still writing the rule.
+- [ ] Exit status: 0 passed, 1 failed, 2 setup error. `--strict` also fails on warnings.
 
 ## 9. Write it up
 

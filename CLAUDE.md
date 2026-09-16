@@ -18,7 +18,7 @@ analysis into detection, not someone who only reads logs.
 | Host | GCP VM `myfirstserver` — Debian 13 (trixie), 2 vCPU, 7.9 GiB RAM, headless |
 | Sibling projects | `~/JC` NSM lab (Suricata/Zeek/ClickHouse/Grafana), `~/GY` malware traffic analysis |
 | Database | ClickHouse 26.3 in the NSM lab's `nsm-clickhouse` container, database `ep` (D2) |
-| Python | 3.13.5, standard library plus PyYAML; pySigma installed in a project virtualenv |
+| Python | 3.13.5, standard library plus PyYAML (Debian `python3-yaml`); the Sigma backend is written here, so pySigma is not a dependency |
 | Data source | [Security-Datasets](https://github.com/OTRF/Security-Datasets) (OTRF/Mordor) — recorded Windows logs of real techniques, JSON; later [EVTX-ATTACK-SAMPLES](https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES) for `.evtx` |
 | Datasets on disk | `/data/ep/datasets`, linked as `datasets/`; git-ignored |
 | Repository | `~/EP` (boot disk, ~4.8 GB free) |
@@ -33,8 +33,10 @@ Decisions:
 - **D3 — Datasets stay off the boot disk and out of git.** They are downloaded to `/data/ep/datasets`; the repository
   holds only analysis, rules and query results. `.githooks/pre-commit` refuses datasets, archives and EVTX files by
   content.
-- **D4 — Rules are Sigma first.** Detections are written as Sigma YAML (portable, the format SOC teams actually use) and
-  converted to ClickHouse SQL by `scripts/sigma-to-sql.py` for validation here.
+- **D4 — Rules are Sigma first.** Detections are written as Sigma YAML (portable: the same rule converts to Splunk,
+  Elastic or Sentinel with sigma-cli) and converted to ClickHouse SQL by `scripts/lib/sigma.py` for validation here.
+  The backend refuses anything it cannot translate faithfully rather than guessing, because a silently mistranslated
+  rule would pass validation while detecting nothing.
 
 ## Safety rules (never violate)
 
@@ -89,7 +91,7 @@ EP/
 
 ## Coding standards
 
-- Python standard library where possible; PyYAML and pySigma are the only dependencies, pinned in `requirements.txt`.
+- Python standard library where possible; PyYAML is the only dependency, recorded in `requirements.txt`.
 - Every script needs `--help`, argument validation, clear errors, and must be safe to re-run.
 - Deterministic output: the same dataset and rules produce identical files, so a re-run shows no diff.
 - Small commits. A rule and its entry in `rules/README.md` go in the same commit.
@@ -105,6 +107,11 @@ EP/
 
 - Phase 1: **complete** (user confirmed 2026-09-16)
 - Phase 2: **complete** (user confirmed 2026-09-16)
+- Phase 3: **complete** (user confirmed 2026-09-16)
+- Phase 4: built 2026-09-16 (sigma.py backend, sigma-to-sql.py, validate-rules.sh, expected.yaml, first three rules).
+  Verified: 3 rules PASS on their own datasets and stay silent on the other, and the harness catches an unconvertible
+  rule, a missing README entry, a rule firing on a control dataset, an unmet expectation, an unloaded dataset and a
+  broken expectations file. Waiting for my confirmation
 - Phase 3: built 2026-09-16 (summarize.py). On the Empire VBS recording it shows the chain wscript.exe -> powershell.exe
   -enc -> whoami.exe, the C2 connection from powershell.exe, and the obfuscated 4104 script block. Waiting for my confirmation
 - Phase 2 detail: verified with the Security-Datasets Empire VBS launcher recording: 2067 events, 0 unparsable,
