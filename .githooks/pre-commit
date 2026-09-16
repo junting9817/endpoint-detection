@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Commit guard (CLAUDE.md E3): refuse anything that could be a raw dataset, an archive or a binary.
+# Judges the staged blob by its magic bytes (also inside gzip), not by its name or the working-tree copy.
+# Enable once per clone:  git config core.hooksPath .githooks
+set -euo pipefail
+
+MAX_BYTES=$((5 * 1024 * 1024)) # reports, CSVs and gzipped Zeek logs stay far below this
+failed=0
+
+refuse() {
+  printf 'pre-commit: refusing %s — %s\n' "$1" "$2" >&2
+  failed=1
+}
+
+# Prints a description when the hex prefix is a forbidden file type; prints nothing otherwise.
+classify() {
+  case "$1" in
+    4d5a*) echo "Windows executable (MZ header)" ;;
+    7f454c46*) echo "ELF executable" ;;
+    cafebabe* | feedface* | feedfacf* | cefaedfe* | cffaedfe*) echo "Mach-O or Java class binary" ;;
+    504b0304* | 504b0506* | 504b0708*) echo "ZIP-based archive (zip, jar, apk, docx/xlsm)" ;;
+    377abcaf271c*) echo "7z archive" ;;
+    526172211a07*) echo "RAR archive" ;;
+    d0cf11e0a1b11ae1*) echo "OLE2 document (legacy Office, common dropper)" ;;
+    456c6646*) echo "Windows EVTX log file" ;;
+    d4c3b2a1* | a1b2c3d4* | 4d3cb2a1* | a1b23c4d*) echo "pcap capture" ;;
+    0a0d0d0a*) echo "pcapng capture" ;;
+  esac
+}
+
+hex8() { head -c 8 | od -An -tx1 | tr -d ' \n'; }
+
+while IFS= read -r -d '' path; do
+  case "$path" in
+    datasets | datasets/*)
+      refuse "$path" "datasets are never committed (they live on the data disk)"
+      continue
+      ;;
+  esac
+
+  size=$(git cat-file -s ":$path")
+  if ((size > MAX_BYTES)); then
+    refuse "$path" "staged blob is $size bytes (limit $MAX_BYTES)"
+    continue
+  fi
+
+  magic=$(git cat-file blob ":$path" | hex8 || true)
+  kind=$(classify "$magic")
+  if [[ -z "$kind" && "$magic" == 1f8b* ]]; then
+    inner=$(git cat-file blob ":$path" | gzip -dc 2>/dev/null | hex8 || true)
+    kind=$(classify "$inner")
+    if [[ -n "$kind" ]]; then kind="gzip-compressed $kind"; fi
+  fi
+  if [[ -n "$kind" ]]; then refuse "$path" "$kind"; fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+if ((failed)); then
+  printf 'pre-commit: commit blocked. Keep datasets under datasets/ (git-ignored, stored on /data/ep).\n' >&2
+  exit 1
+fi

@@ -1,0 +1,30 @@
+# Safety: recorded datasets and archives never enter git (CLAUDE.md D3).
+# .githooks/pre-commit enforces the same rules by file content, in case a file slips past these patterns.
+
+# --- datasets (on /data/ep, linked into the repo) ---
+# No trailing slash: datasets is a symlink, and git treats a symlink as a file, not a directory.
+datasets
+*.evtx
+*.evtx.gz
+*.json.gz
+
+# --- archives ---
+*.zip
+*.7z
+*.rar
+*.tar
+*.tgz
+*.gz
+
+# --- executables, in case a dataset ever ships one ---
+*.exe
+*.dll
+*.sys
+*.ps1.sample
+*.bin
+
+# --- local environment ---
+.venv/
+.env
+__pycache__/
+*.pyc
