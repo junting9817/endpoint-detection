@@ -109,6 +109,12 @@ EP/
 - Phase 2: **complete** (user confirmed 2026-09-16)
 - Phase 3: **complete** (user confirmed 2026-09-16)
 - Phase 4: **complete** (user confirmed 2026-09-16)
+- First published analysis 2026-09-16: `analyses/2026-09-16-empire-launcher-vbs` (status final), with a fourth rule
+  `powershell-amsi-and-logging-tamper`. Validation PASSED — 4 PASS, 0 FAIL, 0 false-positive candidates. Two defects
+  the case exposed: the loader dropped `ExecutionProcessID`, so PowerShell 4103/4104 rows had no pid (fixed, both
+  datasets reloaded); and `ts` is the collector's `@timestamp`, 1–3 s later than Sysmon's own `UtcTime`, so
+  cross-channel sub-second ordering is not evidence (documented in `docs/lessons.md`, a `ts_event` column is the real
+  fix, deferred). Coverage is now 18 techniques, 5 endpoint-only, 5 network-only, 8 analysed or seen without a rule
 - Phase 5: built 2026-09-16 (update-readme.py, README, ATT&CK layers). The coverage table spans both projects: with
   three endpoint rules and the network project's five, 12 techniques appear, 4 endpoint-only, 5 network-only, 3 seen
   without a validated rule. Waiting for my confirmation
