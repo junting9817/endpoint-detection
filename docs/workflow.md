@@ -50,11 +50,24 @@ CH() { docker exec -i nsm-clickhouse clickhouse-client "$@"; }   # the lab's con
   SELECT min(ts), max(ts), uniq(hostname) FROM ep.win_events WHERE dataset = '<id>';
   ```
 
-## 3. Triage — `scripts/summarize.py` (Phase 3)
+## 3. Triage — `scripts/summarize.py`
 
-- [ ] `scripts/summarize.py $CASE` writes `triage.txt`: event counts by channel and EventID, the process tree, rare
-      parent-child pairs, command lines containing encoded or obfuscated content, LOLBin execution, per-process network
-      connections, registry and service changes, and log clearing.
+- [ ] `scripts/summarize.py $CASE` writes `triage.txt` and prints it:
+
+  | Section | What it answers |
+  |---|---|
+  | What was recorded | which channels and event ids exist at all — a rule cannot use data the dataset lacks |
+  | Process tree | the attack chain in a few lines; Sysmon 1 and Security 4688 are deduplicated, so each process appears once |
+  | Parent → child pairs | how many *other* datasets share each pair: a pair nobody else has is the attack or this lab's quirk |
+  | Command lines worth reading | encoding, download cradles, hidden windows, obfuscation characters, user-writable paths |
+  | LOLBin execution | Windows binaries routinely abused to run or fetch code, with their parent |
+  | Network per process | which process opened which connection — a script interpreter with its own socket is a lead |
+  | Persistence | only keys that actually start or hijack code (Run, Winlogon, IFEO, service ImagePath, TaskCache) |
+  | Credential access | Sysmon 10 against LSASS, with the access mask marked routine or read-access |
+  | Defence evasion | log clearing, self-deleted files |
+  | PowerShell script blocks | 4104 content, longest first |
+  | Where to look next | one ClickHouse query per lead |
+
 - [ ] Read it before writing any query. The tree usually shows the whole attack in ten lines.
 
 ## 4. Follow the process tree

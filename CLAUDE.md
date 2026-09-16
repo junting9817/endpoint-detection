@@ -104,6 +104,8 @@ EP/
 ## Progress
 
 - Phase 1: **complete** (user confirmed 2026-09-16)
-- Phase 2: built 2026-09-16 (schema, fetch-dataset.sh, new-case.sh, load-dataset.sh, the field mapper). Verified with
-  the Security-Datasets Empire VBS launcher recording: 2067 events, 0 unparsable, idempotent reload, `nsm` untouched.
-  Waiting for my confirmation
+- Phase 2: **complete** (user confirmed 2026-09-16)
+- Phase 3: built 2026-09-16 (summarize.py). On the Empire VBS recording it shows the chain wscript.exe -> powershell.exe
+  -enc -> whoami.exe, the C2 connection from powershell.exe, and the obfuscated 4104 script block. Waiting for my confirmation
+- Phase 2 detail: verified with the Security-Datasets Empire VBS launcher recording: 2067 events, 0 unparsable,
+  idempotent reload, `nsm` untouched
