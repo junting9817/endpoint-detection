@@ -35,3 +35,8 @@ rules:
       - dataset: cmd_lsass_memory_dumpert_syscalls
         min: 1
         note: "Dumpert opening LSASS with PROCESS_ALL_ACCESS"
+  - rule: powershell-amsi-and-logging-tamper
+    expect:
+      - dataset: empire_launcher_vbs
+        min: 1
+        note: "the stager disabling script block logging and AMSI before downloading its payload"

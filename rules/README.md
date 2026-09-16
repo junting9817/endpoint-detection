@@ -10,6 +10,7 @@ Add the entry below in the same commit as the rule.
 | `script-host-spawns-powershell` | Script host starts PowerShell | T1059.001, T1059.005 | process_creation | empire_launcher_vbs | experimental |
 | `encoded-powershell-command` | PowerShell started with an encoded command | T1059.001, T1027 | process_creation | empire_launcher_vbs | experimental |
 | `lsass-memory-read-access` | LSASS opened with memory read access | T1003.001 | process_access | cmd_lsass_memory_dumpert_syscalls | experimental |
+| `powershell-amsi-and-logging-tamper` | PowerShell script block tampering with AMSI or script block logging | T1562.001, T1059.001 | ps_script | empire_launcher_vbs | experimental |
 
 <!--
 ## <rule id> — <title>
@@ -66,3 +67,22 @@ Add the entry below in the same commit as the rule.
 - **Evasion notes:** an attacker can request a narrower mask and still read memory (0x1010 is included for that
   reason), or avoid the API entirely by dumping via a driver or a snapshot. The call trace field is where those show
   up; this rule does not cover them.
+
+## PowerShell script block tampering with AMSI or script block logging
+
+- **Source dataset:** `empire_launcher_vbs`
+- **Intent:** catch the stager's opening move — blinding AMSI and switching off script block logging — rather than the
+  payload that follows it.
+- **Logic:** a 4104 script block containing `amsiInitF`, `AmsiUtils`, `amsiContext`, `cachedGroupPolicySettings`,
+  `EnableScriptB` or `ScriptBlockLogging`.
+- **Why not an indicator:** these are .NET field and policy names the technique cannot avoid naming. The stager in this
+  recording splits them across string concatenations (`'ScriptB'+'lockLogging'`) and mangles their case, and the rule
+  still matches because 4104 logs the assembled block, not the source text.
+- **ATT&CK:** T1562.001 Impair Defenses: Disable or Modify Tools, T1059.001 PowerShell
+- **Validation:** fires on `empire_launcher_vbs`; silent on the credential-access recording.
+- **False-positive notes:** security research, training material and administrative scripts that *read* the policy will
+  match. Triage by who ran it and from where, not by the string alone.
+- **Evasion notes:** the names can be assembled at runtime from character arrays or fetched by reflection over hashed
+  names, which defeats a string match on the script block. This rule is one layer; the parent-child and encoded-command
+  rules cover the same stager from another angle. If script block logging is genuinely disabled first, nothing here is
+  recorded at all — which is why the group policy tamper itself is worth alerting on.

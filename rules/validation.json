@@ -4,8 +4,8 @@
   "datasets": 2,
   "fail": 0,
   "fp_candidates": 0,
-  "pass": 3,
-  "rules": 3,
+  "pass": 4,
+  "rules": 4,
   "warnings": 0
  },
  "expectations": [
@@ -25,6 +25,15 @@
    "note": "Dumpert opening LSASS with PROCESS_ALL_ACCESS",
    "result": "PASS",
    "rule": "lsass-memory-read-access",
+   "why": ""
+  },
+  {
+   "dataset": "empire_launcher_vbs",
+   "expected": ">= 1",
+   "hits": 1,
+   "note": "the stager disabling script block logging and AMSI before downloading its payload",
+   "result": "PASS",
+   "rule": "powershell-amsi-and-logging-tamper",
    "why": ""
   },
   {
@@ -63,6 +72,19 @@
     "T1003.001"
    ],
    "title": "LSASS opened with memory read access"
+  },
+  {
+   "hits": {
+    "empire_launcher_vbs": 1
+   },
+   "lint": [],
+   "rule": "powershell-amsi-and-logging-tamper",
+   "status": "PASS",
+   "techniques": [
+    "T1059.001",
+    "T1562.001"
+   ],
+   "title": "PowerShell script block tampering with AMSI or script block logging"
   },
   {
    "hits": {
