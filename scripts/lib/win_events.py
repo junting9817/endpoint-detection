@@ -138,7 +138,10 @@ def to_row(event: dict, dataset: str, offset_seconds=None) -> tuple[dict, str]:
         "user": user_of(event),
 
         "process_guid": text(event, "ProcessGuid", "SourceProcessGUID"),
-        "process_id": number(event, "NewProcessId") if is_4688 else number(event, "ProcessId", "SourceProcessId"),
+        # ExecutionProcessID is last: it is the envelope's "which process wrote this event", which for the PowerShell
+        # and Security channels is the only pid there is, and never contradicts a real field when one exists.
+        "process_id": (number(event, "NewProcessId") if is_4688 else
+                       number(event, "ProcessId", "SourceProcessId", "ExecutionProcessID")),
         "image": text(event, "Image", "NewProcessName", "SourceImage"),
         "original_file_name": text(event, "OriginalFileName"),
         "command_line": text(event, "CommandLine", "ProcessCommandLine"),
