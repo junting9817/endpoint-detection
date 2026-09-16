@@ -15,7 +15,7 @@ status: final
 
 - **What:** `THESHIRE\pgustavo` opened `launcher.vbs` on the desktop of `WORKSTATION5`. It started PowerShell with an
   encoded command that turned off AMSI and script block logging, downloaded its agent from `hxxp://10.10.10[.]5/news.php`,
-  fingerprinted the host over WMI and settled into a 5-second beacon. `whoami` ran 25 seconds later.
+  fingerprinted the host over WMI and settled into a 5-second beacon. `whoami` ran 29 seconds after the double-click.
 - **Detection:** the durable signals are relationships and shapes, not strings from this campaign — a script host
   starting PowerShell, an encoded command line, and a script block that names AMSI or the logging policy. Three rules
   written here cover those. Nothing is written to disk, so file-based detection has nothing to work with.
@@ -125,7 +125,7 @@ there is no file to scan and no new process to see.
 | `10.10.10[.]5`, `/news.php`, the RC4 key | low | lab values — context for this case, never a rule |
 
 **The finding that matters most.** The stager's own script block was recorded, at severity `WARNING`, and it is the
-**only** 4104 event in the whole recording — the agent then ran for 47 more seconds, executing script through `IEX`
+**only** 4104 event in the whole recording — the agent then ran for 49 more seconds, executing script through `IEX`
 continuously, without producing a second one. Windows logs script blocks it considers suspicious even when script
 block logging is off, which is why the tamper attempt was captured; after it, the detailed script text is gone.
 
@@ -272,7 +272,7 @@ still have no pid — that channel does not record one.
 - **Two recordings is a weak control group.** Every rule here is validated against exactly one other dataset, which
   proves it is not trivially noisy and nothing more. Real false-positive rates need a benign baseline, which this
   repository does not have yet.
-- **Only one outbound connection is recorded** although the agent beaconed for another 47 seconds. Reused keep-alive
+- **Only one outbound connection is recorded** although the agent beaconed for another 46 seconds. Reused keep-alive
   connections would explain it, and so would a gap in collection; the data does not distinguish them. Endpoint
   telemetry told me *that* PowerShell connected, never what it sent — the content side of T1071.001 and T1105 needs
   network telemetry or a proxy log, which is where the sibling project's rules live.

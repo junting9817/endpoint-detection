@@ -14,7 +14,7 @@ One entry per technique, newest first. Record what changed how I analyse or dete
 ## 2026-09-16-empire-launcher-vbs
 
 - **Analysis:** the process tree and the command line told me what started; they said nothing about what the stager did
-  for the next 47 seconds, because it never created another process. Module logging (4103) did — extracting
+  for the next 52 seconds, because it never created another process. Module logging (4103) did — extracting
   `CommandInvocation(...)` out of `extra['Payload']` produced the WMI fingerprinting and the 5-second `Start-Sleep`
   loop, which is the beacon. **Script block logging (4104) stopped after one event while module logging carried on**,
   which is the reverse of how I had been prioritising the two channels. When 4104 is quiet, 4103 is where the
