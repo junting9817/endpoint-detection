@@ -34,11 +34,15 @@ CH() { docker exec -i nsm-clickhouse clickhouse-client "$@"; }   # the lab's con
   - EVTX-ATTACK-SAMPLES: `.evtx` files named by technique (Phase 2 adds EVTX support).
 - [ ] Note what the dataset claims to contain. That claim is a starting point, not a finding: confirm it in the events.
 
-## 2. Fetch and load — `scripts/fetch-dataset.sh`, `scripts/load-dataset.sh` (Phase 2)
+## 2. Fetch and load — `scripts/fetch-dataset.sh`, `scripts/load-dataset.sh`
 
-- [ ] `scripts/fetch-dataset.sh <path-or-url>` downloads to `datasets/`, records SHA256 and the metadata entry.
-- [ ] `scripts/load-dataset.sh <file> $CASE` loads the events into `ep.win_events` tagged with the dataset id, and
-      writes `analyses/$CASE/dataset.txt` (source, hash, event counts by channel and EventID, time range).
+- [ ] `scripts/new-case.sh <case>` creates the case folder and `report.md` from the template.
+- [ ] `scripts/fetch-dataset.sh <path-or-url>` downloads to `datasets/`, checks the archive and records both hashes
+      in `source.txt`. Only the dataset repositories are accepted as download hosts.
+- [ ] `scripts/load-dataset.sh <dataset id> $CASE` maps the events into `ep.win_events` (one partition per dataset, so
+      re-loading replaces rather than duplicates), refreshes `ep.datasets`, and writes `analyses/$CASE/dataset.txt`.
+      Process creation is normalised: Sysmon 1 and Security 4688 both fill `image`, `command_line`, `parent_image`
+      and `user`, and every unmapped field is kept in the `extra` map.
 - [ ] Sanity-check what arrived:
 
   ```sql
