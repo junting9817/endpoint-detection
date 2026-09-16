@@ -1,0 +1,37 @@
+# What each Sigma rule must catch, per dataset, checked by scripts/validate-rules.sh.
+#
+# Every loaded dataset that a rule does not expect is its control group: a hit there is a false-positive candidate
+# that has to be narrowed away or explained. Unknown keys are errors, so a typo cannot silently disable a check.
+#
+# Schema (version 1)
+#
+#   version: 1
+#   rules:
+#     - rule: <file name in rules/sigma/ without .yml>
+#       note: <optional free text>
+#       expect:
+#         - dataset: <dataset id as loaded>
+#           min: <int, default 1>      minimum matching events
+#           max: <int, optional>       maximum, to catch a rule that suddenly matches everything
+#           note: <required>           what this expectation proves
+#       allow:
+#         - dataset: <dataset id>
+#           reason: <required>         why a hit here is acceptable, after reviewing the events
+
+version: 1
+rules:
+  - rule: script-host-spawns-powershell
+    expect:
+      - dataset: empire_launcher_vbs
+        min: 1
+        note: "the VBS launcher handing over to PowerShell"
+  - rule: encoded-powershell-command
+    expect:
+      - dataset: empire_launcher_vbs
+        min: 1
+        note: "Empire's launcher runs PowerShell with -enc"
+  - rule: lsass-memory-read-access
+    expect:
+      - dataset: cmd_lsass_memory_dumpert_syscalls
+        min: 1
+        note: "Dumpert opening LSASS with PROCESS_ALL_ACCESS"

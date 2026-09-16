@@ -1,0 +1,83 @@
+{
+ "allowed_hits": [],
+ "counts": {
+  "datasets": 2,
+  "fail": 0,
+  "fp_candidates": 0,
+  "pass": 3,
+  "rules": 3,
+  "warnings": 0
+ },
+ "expectations": [
+  {
+   "dataset": "empire_launcher_vbs",
+   "expected": ">= 1",
+   "hits": 2,
+   "note": "Empire's launcher runs PowerShell with -enc",
+   "result": "PASS",
+   "rule": "encoded-powershell-command",
+   "why": ""
+  },
+  {
+   "dataset": "cmd_lsass_memory_dumpert_syscalls",
+   "expected": ">= 1",
+   "hits": 2,
+   "note": "Dumpert opening LSASS with PROCESS_ALL_ACCESS",
+   "result": "PASS",
+   "rule": "lsass-memory-read-access",
+   "why": ""
+  },
+  {
+   "dataset": "empire_launcher_vbs",
+   "expected": ">= 1",
+   "hits": 2,
+   "note": "the VBS launcher handing over to PowerShell",
+   "result": "PASS",
+   "rule": "script-host-spawns-powershell",
+   "why": ""
+  }
+ ],
+ "fp_candidates": [],
+ "rules": [
+  {
+   "hits": {
+    "empire_launcher_vbs": 2
+   },
+   "lint": [],
+   "rule": "encoded-powershell-command",
+   "status": "PASS",
+   "techniques": [
+    "T1027",
+    "T1059.001"
+   ],
+   "title": "PowerShell started with an encoded command"
+  },
+  {
+   "hits": {
+    "cmd_lsass_memory_dumpert_syscalls": 2
+   },
+   "lint": [],
+   "rule": "lsass-memory-read-access",
+   "status": "PASS",
+   "techniques": [
+    "T1003.001"
+   ],
+   "title": "LSASS opened with memory read access"
+  },
+  {
+   "hits": {
+    "empire_launcher_vbs": 2
+   },
+   "lint": [],
+   "rule": "script-host-spawns-powershell",
+   "status": "PASS",
+   "techniques": [
+    "T1059.001",
+    "T1059.005"
+   ],
+   "title": "Script host starts PowerShell"
+  }
+ ],
+ "verdict": "PASSED",
+ "version": 1
+}

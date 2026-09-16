@@ -1,0 +1,30 @@
+title: Script host starts PowerShell
+id: 0f4d0cf9-8f8a-4f41-9a6a-2b0f4d0a1e31
+status: experimental
+description: >
+  wscript.exe or cscript.exe starting PowerShell. A script file that needs PowerShell to continue is the shape of a
+  launcher: the script is the delivery, PowerShell is the payload runner.
+references:
+  - https://github.com/OTRF/Security-Datasets/tree/master/datasets/atomic/windows/execution/host
+author: junting9817
+date: 2026-09-16
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  parent:
+    ParentImage|endswith:
+      - '\wscript.exe'
+      - '\cscript.exe'
+  child:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  condition: parent and child
+falsepositives:
+  - Administrative VBScript or JScript wrappers that call PowerShell on purpose; in that case allowlist the script path
+level: high
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - attack.t1059.005

@@ -1,0 +1,37 @@
+title: LSASS opened with memory read access
+id: 2b8e1f07-4c1a-49a1-8d0b-6a4a0a5e0d33
+status: experimental
+description: >
+  A process opening lsass.exe with an access mask that allows reading its memory. Credential dumping needs that
+  access; ordinary software that merely asks about the process does not.
+references:
+  - https://github.com/OTRF/Security-Datasets/tree/master/datasets/atomic/windows/credential_access/host
+author: junting9817
+date: 2026-09-16
+logsource:
+  product: windows
+  category: process_access
+detection:
+  lsass:
+    TargetImage|endswith: '\lsass.exe'
+  read_access:
+    GrantedAccess:
+      - '0x1fffff'
+      - '0x1f0fff'
+      - '0x1010'
+      - '0x1410'
+      - '0x1438'
+      - '0x143a'
+  known_good:
+    SourceImage|endswith:
+      - '\wmiprvse.exe'
+      - '\taskmgr.exe'
+      - '\msmpeng.exe'
+      - '\csrss.exe'
+  condition: lsass and read_access and not known_good
+falsepositives:
+  - Endpoint protection and backup agents legitimately read process memory; allowlist those specific images by path
+level: high
+tags:
+  - attack.credential_access
+  - attack.t1003.001

@@ -1,0 +1,40 @@
+# Sigma rule validation
+
+Rules:     3 in rules/sigma/
+Datasets:  2 loaded (cmd_lsass_memory_dumpert_syscalls, empire_launcher_vbs)
+
+Result:    PASSED — 3 PASS, 0 FAIL, 0 false-positive candidates, 0 warnings
+
+## Rules
+
+  rule                           status  ATT&CK                title
+  encoded-powershell-command     PASS    T1027, T1059.001      PowerShell started with an encoded command
+  lsass-memory-read-access       PASS    T1003.001             LSASS opened with memory read access
+  script-host-spawns-powershell  PASS    T1059.001, T1059.005  Script host starts PowerShell
+
+## Expectations
+
+  rule                           dataset                            result  hits  expected  why  what it proves
+  encoded-powershell-command     empire_launcher_vbs                PASS    2     >= 1      -    Empire's launcher runs PowerShell with -enc
+  lsass-memory-read-access       cmd_lsass_memory_dumpert_syscalls  PASS    2     >= 1      -    Dumpert opening LSASS with PROCESS_ALL_ACCES
+  script-host-spawns-powershell  empire_launcher_vbs                PASS    2     >= 1      -    the VBS launcher handing over to PowerShell
+
+## False-positive candidates (a rule fired on a dataset where it was not expected)
+
+  (none)
+
+## Allowed hits (reviewed in expected.yaml)
+
+  (none)
+
+## Lint
+
+  (none)
+
+## Coverage matrix
+
+  rule                           cmd_lsass_memory_dumpert_syscalls  empire_launcher_vbs
+  encoded-powershell-command     .                                  P
+  lsass-memory-read-access       P                                  .
+  script-host-spawns-powershell  .                                  P
+  P expected and fired · F expected but missing · ! fired unexpectedly · a allowed · . silent

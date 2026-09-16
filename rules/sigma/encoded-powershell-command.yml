@@ -1,0 +1,33 @@
+title: PowerShell started with an encoded command
+id: 6a1c7c26-6b0e-4f7a-9d0e-0a6d2f52a1b4
+status: experimental
+description: >
+  PowerShell invoked with -EncodedCommand (or its abbreviations). Encoding a command is a way to carry a script
+  through a command line without quoting problems, which is exactly why launchers and droppers use it.
+references:
+  - https://github.com/OTRF/Security-Datasets/tree/master/datasets/atomic/windows/execution/host
+author: junting9817
+date: 2026-09-16
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  powershell:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  encoded:
+    CommandLine|contains:
+      - ' -enc '
+      - ' -encodedcommand '
+      - ' -ec '
+      - ' /enc '
+  condition: powershell and encoded
+falsepositives:
+  - Management tooling that encodes its own scripts (some deployment and backup products do); allowlist by parent process
+level: high
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - attack.defense_evasion
+  - attack.t1027
