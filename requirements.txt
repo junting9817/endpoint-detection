@@ -1,0 +1,3 @@
+# Everything else in scripts/ uses the Python standard library only.
+# On Debian the packaged build satisfies this: sudo apt-get install -y python3-yaml
+PyYAML>=6  # Sigma rules and rules/expected.yaml
