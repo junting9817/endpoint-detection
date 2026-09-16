@@ -10,18 +10,18 @@ writes Suricata rules; the coverage table below shows where the two meet.
 <!-- ep:stats -->
 | | |
 |---|---|
-| Techniques analysed | 0 published, 1 in progress |
-| Sigma rules | 3 in the library · 3 validated · 0 false-positive candidates |
-| ATT&CK techniques | 4 tagged · 4 covered by a validated rule |
-| Rule validation | **PASSED** — 3 expectations met, 0 failed, over 2 recordings ([rules/validation.txt](rules/validation.txt)) |
+| Techniques analysed | 1 published |
+| Sigma rules | 4 in the library · 4 validated · 0 false-positive candidates |
+| ATT&CK techniques | 5 tagged · 5 covered by a validated rule |
+| Rule validation | **PASSED** — 4 expectations met, 0 failed, over 2 recordings ([rules/validation.txt](rules/validation.txt)) |
 <!-- /ep:stats -->
 
 ## Analyses
 
 <!-- ep:analyses -->
-*No published analyses yet.*
-
-In progress: `2026-09-16-empire-launcher-vbs`.
+| Date | Analysis | Technique | Recording | Rules | ATT&CK |
+|---|---|---|---|---|---|
+| 2026-09-16 | [Empire VBS launcher — a desktop script that blinds PowerShell, then beacons](analyses/2026-09-16-empire-launcher-vbs/report.md) | Empire launcher (VBS stager) | `empire_launcher_vbs` (2067 events) | `script-host-spawns-powershell`, `encoded-powershell-command`, `powershell-amsi-and-logging-tamper` | [T1204.002](https://attack.mitre.org/techniques/T1204/002/), [T1059.005](https://attack.mitre.org/techniques/T1059/005/), [T1059.001](https://attack.mitre.org/techniques/T1059/001/), [T1027](https://attack.mitre.org/techniques/T1027/), [T1140](https://attack.mitre.org/techniques/T1140/), [T1562.001](https://attack.mitre.org/techniques/T1562/001/), [T1105](https://attack.mitre.org/techniques/T1105/), [T1071.001](https://attack.mitre.org/techniques/T1071/001/), [T1016](https://attack.mitre.org/techniques/T1016/), [T1033](https://attack.mitre.org/techniques/T1033/), [T1082](https://attack.mitre.org/techniques/T1082/) |
 <!-- /ep:analyses -->
 
 ## Rule library
@@ -34,6 +34,7 @@ Each rule's intent, logic, false-positive notes and **evasion notes** are in [ru
 |---|---|---|---|---|
 | `encoded-powershell-command` | PowerShell started with an encoded command | [T1027](https://attack.mitre.org/techniques/T1027/), [T1059.001](https://attack.mitre.org/techniques/T1059/001/) | high | fires where expected, silent elsewhere |
 | `lsass-memory-read-access` | LSASS opened with memory read access | [T1003.001](https://attack.mitre.org/techniques/T1003/001/) | high | fires where expected, silent elsewhere |
+| `powershell-amsi-and-logging-tamper` | PowerShell script block tampering with AMSI or script block logging | [T1059.001](https://attack.mitre.org/techniques/T1059/001/), [T1562.001](https://attack.mitre.org/techniques/T1562/001/) | high | fires where expected, silent elsewhere |
 | `script-host-spawns-powershell` | Script host starts PowerShell | [T1059.001](https://attack.mitre.org/techniques/T1059/001/), [T1059.005](https://attack.mitre.org/techniques/T1059/005/) | high | fires where expected, silent elsewhere |
 <!-- /ep:rules -->
 
@@ -46,19 +47,25 @@ Validation lives in [rules/expected.yaml](rules/expected.yaml) (what each rule m
 | Technique | Endpoint | Network |
 |---|---|---|
 | [T1003.001](https://attack.mitre.org/techniques/T1003/001/) | validated rule | — |
+| [T1016](https://attack.mitre.org/techniques/T1016/) | analysed, no rule | — |
 | [T1027](https://attack.mitre.org/techniques/T1027/) | validated rule | — |
+| [T1033](https://attack.mitre.org/techniques/T1033/) | analysed, no rule | — |
 | [T1041](https://attack.mitre.org/techniques/T1041/) | — | validated rule |
 | [T1056.001](https://attack.mitre.org/techniques/T1056/001/) | — | seen in traffic |
 | [T1059.001](https://attack.mitre.org/techniques/T1059/001/) | validated rule | — |
 | [T1059.005](https://attack.mitre.org/techniques/T1059/005/) | validated rule | — |
-| [T1071.001](https://attack.mitre.org/techniques/T1071/001/) | — | validated rule |
+| [T1071.001](https://attack.mitre.org/techniques/T1071/001/) | analysed, no rule | validated rule |
+| [T1082](https://attack.mitre.org/techniques/T1082/) | analysed, no rule | — |
 | [T1095](https://attack.mitre.org/techniques/T1095/) | — | validated rule |
-| [T1105](https://attack.mitre.org/techniques/T1105/) | — | validated rule |
+| [T1105](https://attack.mitre.org/techniques/T1105/) | analysed, no rule | validated rule |
+| [T1140](https://attack.mitre.org/techniques/T1140/) | analysed, no rule | — |
+| [T1204.002](https://attack.mitre.org/techniques/T1204/002/) | analysed, no rule | — |
 | [T1204.004](https://attack.mitre.org/techniques/T1204/004/) | — | validated rule |
+| [T1562.001](https://attack.mitre.org/techniques/T1562/001/) | validated rule | — |
 | [T1571](https://attack.mitre.org/techniques/T1571/) | — | seen in traffic |
 | [T1572](https://attack.mitre.org/techniques/T1572/) | — | seen in traffic |
 
-0 techniques are covered on both sides, 4 on the endpoint only, 5 on the network only.
+0 techniques are covered on both sides, 5 on the endpoint only, 5 on the network only.
 <!-- /ep:coverage -->
 
 Navigator layers: [endpoint](rules/attack-coverage.json), [combined](rules/attack-coverage-combined.json).

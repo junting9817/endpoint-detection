@@ -22,9 +22,23 @@
       "showSubtechniques": false
     },
     {
+      "techniqueID": "T1016",
+      "score": 1,
+      "comment": "seen, no validated rule yet",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
       "techniqueID": "T1027",
       "score": 2,
       "comment": "validated endpoint rule",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1033",
+      "score": 1,
+      "comment": "seen, no validated rule yet",
       "enabled": true,
       "showSubtechniques": false
     },
@@ -64,6 +78,13 @@
       "showSubtechniques": false
     },
     {
+      "techniqueID": "T1082",
+      "score": 1,
+      "comment": "seen, no validated rule yet",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
       "techniqueID": "T1095",
       "score": 2,
       "comment": "validated network rule",
@@ -78,9 +99,30 @@
       "showSubtechniques": false
     },
     {
+      "techniqueID": "T1140",
+      "score": 1,
+      "comment": "seen, no validated rule yet",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1204.002",
+      "score": 1,
+      "comment": "seen, no validated rule yet",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
       "techniqueID": "T1204.004",
       "score": 2,
       "comment": "validated network rule",
+      "enabled": true,
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1562.001",
+      "score": 2,
+      "comment": "validated endpoint rule",
       "enabled": true,
       "showSubtechniques": false
     },
