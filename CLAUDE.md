@@ -108,6 +108,10 @@ EP/
 - Phase 1: **complete** (user confirmed 2026-09-16)
 - Phase 2: **complete** (user confirmed 2026-09-16)
 - Phase 3: **complete** (user confirmed 2026-09-16)
+- Phase 4: **complete** (user confirmed 2026-09-16)
+- Phase 5: built 2026-09-16 (update-readme.py, README, ATT&CK layers). The coverage table spans both projects: with
+  three endpoint rules and the network project's five, 12 techniques appear, 4 endpoint-only, 5 network-only, 3 seen
+  without a validated rule. Waiting for my confirmation
 - Phase 4: built 2026-09-16 (sigma.py backend, sigma-to-sql.py, validate-rules.sh, expected.yaml, first three rules).
   Verified: 3 rules PASS on their own datasets and stay silent on the other, and the harness catches an unconvertible
   rule, a missing README entry, a rule firing on a control dataset, an unmet expectation, an unloaded dataset and a

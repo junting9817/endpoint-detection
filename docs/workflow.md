@@ -152,7 +152,10 @@ CH() { docker exec -i nsm-clickhouse clickhouse-client "$@"; }   # the lab's con
 
 ## 10. Publish
 
-- [ ] `scripts/update-readme.py` (Phase 5) refreshes the index, rule table and ATT&CK coverage.
+- [ ] Set `status: final` in the report's front matter once no `<placeholder>` is left.
+- [ ] `scripts/update-readme.py` refreshes the index, the rule table, and the ATT&CK coverage table that spans this
+      repository and the network project next door, plus both Navigator layers. `--check` writes nothing and exits 1
+      when something is out of date, which is the form for a commit hook or CI.
 - [ ] Add the takeaways to [lessons.md](lessons.md).
 - [ ] Commit checks:
 
