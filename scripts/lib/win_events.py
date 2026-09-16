@@ -11,11 +11,12 @@ Standard library only. Reads local files; makes no network requests.
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 # nxlog envelope and collection artefacts: kept out of `extra` because they say nothing about the event itself
 ENVELOPE = {
     "@timestamp", "@version", "host", "port", "tags", "EventTime", "EventReceivedTime", "ExecutionProcessID",
+    "TimeCreated",
     "SourceModuleName", "SourceModuleType", "Severity", "SeverityValue", "Opcode", "OpcodeValue", "ThreadID",
     "Keywords", "Version", "ProviderGuid", "Category", "RuleName", "EventTypeOrignal", "ERROR_EVT_UNRESOLVED",
 }
@@ -57,18 +58,54 @@ def number(event: dict, *names: str) -> int:
     return 0
 
 
-def timestamp(event: dict) -> str:
-    """'2020-09-04T20:09:55.953Z' -> '2020-09-04 20:09:55.953' (UTC, as DateTime64(3) expects)."""
-    raw = text(event, "@timestamp", "UtcTime", "EventTime")
+UTC_TIME_FIELDS = ("@timestamp", "UtcTime", "EventTime")
+LOCAL_TIME_FIELD = "TimeCreated"  # present in some recordings, and not in UTC
+
+
+def parse_time(raw: str):
+    """'2020-09-04T20:09:55.953Z' or '2020-10-18 10:56:18.799' -> aware datetime, or None."""
     if not raw:
-        return "1970-01-01 00:00:00.000"
+        return None
     try:
-        moment = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        moment = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
     except ValueError:
-        return "1970-01-01 00:00:00.000"
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=timezone.utc)
+        return None
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
+def format_time(moment) -> str:
     return moment.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.") + f"{moment.microsecond // 1000:03d}"
+
+
+def time_offset(events: list[dict]):
+    """How far TimeCreated is from UTC in this recording, measured on the events that carry both fields.
+
+    Some datasets write TimeCreated in the collecting host's own clock, so events that carry only that field would
+    otherwise land hours away from the rest of the timeline. The offset is read from the data, never assumed.
+    """
+    deltas = []
+    for event in events:
+        local = parse_time(event.get(LOCAL_TIME_FIELD, ""))
+        utc = parse_time(text(event, *UTC_TIME_FIELDS))
+        if local and utc:
+            deltas.append(round((utc - local).total_seconds()))
+    if not deltas:
+        return None, 0
+    deltas.sort()
+    return deltas[len(deltas) // 2], len(deltas)
+
+
+def timestamp(event: dict, offset_seconds=None) -> tuple[str, str]:
+    """(timestamp for ClickHouse, which field it came from)."""
+    moment = parse_time(text(event, *UTC_TIME_FIELDS))
+    if moment:
+        return format_time(moment), "utc"
+    local = parse_time(event.get(LOCAL_TIME_FIELD, ""))
+    if local:
+        if offset_seconds is None:
+            return format_time(local), "local-unadjusted"
+        return format_time(local + timedelta(seconds=offset_seconds)), "local-adjusted"
+    return "1970-01-01 00:00:00.000", "missing"
 
 
 def user_of(event: dict) -> str:
@@ -84,13 +121,14 @@ def user_of(event: dict) -> str:
     return ""
 
 
-def to_row(event: dict, dataset: str) -> dict:
+def to_row(event: dict, dataset: str, offset_seconds=None) -> tuple[dict, str]:
     """One ep.win_events row. Process creation is normalised across Sysmon 1 and Security 4688."""
     event_id = number(event, "EventID")
+    ts, ts_source = timestamp(event, offset_seconds)
     is_4688 = event_id == 4688  # here ProcessId is the *creator*, NewProcessId the process that started
     row = {
         "dataset": dataset,
-        "ts": timestamp(event),
+        "ts": ts,
         "record_id": number(event, "RecordNumber"),
         "hostname": text(event, "Hostname"),
         "channel": text(event, "Channel"),
@@ -139,7 +177,7 @@ def to_row(event: dict, dataset: str) -> dict:
         "message": text(event, "Message"),
         "extra": {k: str(v) for k, v in event.items() if k not in ENVELOPE and k not in MAPPED and v not in (None, "")},
     }
-    return row
+    return row, ts_source
 
 
 def main() -> int:
@@ -151,10 +189,15 @@ def main() -> int:
     counts: dict[tuple, int] = {}
     hosts: set[str] = set()
     channels: set[str] = set()
+    sources: dict[str, int] = {}
     first = last = ""
     total = bad = 0
     out = sys.stdout
-    for number_, line in enumerate(sys.stdin, 1):
+
+    # Datasets are recordings of minutes, so reading them into memory is fine — and the TimeCreated offset can only be
+    # measured by looking at the whole file first.
+    events = []
+    for line in sys.stdin:
         line = line.strip()
         if not line:
             continue
@@ -163,12 +206,17 @@ def main() -> int:
         except json.JSONDecodeError:
             bad += 1
             continue
-        if not isinstance(event, dict):
+        if isinstance(event, dict):
+            events.append(event)
+        else:
             bad += 1
-            continue
-        row = to_row(event, args.dataset)
+    offset, measured_on = time_offset(events)
+
+    for event in events:
+        row, ts_source = to_row(event, args.dataset, offset)
         out.write(json.dumps(row, ensure_ascii=False) + "\n")
         total += 1
+        sources[ts_source] = sources.get(ts_source, 0) + 1
         counts[(row["channel"], row["event_id"])] = counts.get((row["channel"], row["event_id"]), 0) + 1
         if row["hostname"]:
             hosts.add(row["hostname"])
@@ -181,10 +229,20 @@ def main() -> int:
     if args.stats:
         with open(args.stats, "w", encoding="utf-8") as handle:
             json.dump({"events": total, "unparsable_lines": bad, "first_ts": first, "last_ts": last,
+                       "timestamp_sources": dict(sorted(sources.items())),
+                       "timecreated_offset_seconds": offset, "offset_measured_on_events": measured_on,
                        "hosts": sorted(hosts), "channels": sorted(channels),
                        "by_channel_event": sorted(([c, e, n] for (c, e), n in counts.items()), key=lambda r: -r[2])},
                       handle, indent=1)
-    print(f"{total} events mapped, {bad} unparsable lines", file=sys.stderr)
+    note = ""
+    if sources.get("local-adjusted"):
+        note = (f"; {sources['local-adjusted']} events had only {LOCAL_TIME_FIELD}, shifted by {offset} s "
+                f"(offset measured on {measured_on} events carrying both fields)")
+    elif sources.get("local-unadjusted"):
+        note = f"; {sources['local-unadjusted']} events used {LOCAL_TIME_FIELD} as-is (no event carried both fields)"
+    if sources.get("missing"):
+        note += f"; {sources['missing']} events had no usable timestamp"
+    print(f"{total} events mapped, {bad} unparsable lines{note}", file=sys.stderr)
     return 1 if total == 0 else 0
 
 
