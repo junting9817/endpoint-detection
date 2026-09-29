@@ -1,11 +1,16 @@
-# Endpoint Detection (Windows telemetry)
+# Endpoint detection from real attack recordings
 
-Detections written from public recordings of real attack techniques on Windows. Sysmon and Windows Event Log data is
-loaded into ClickHouse, analysed, and turned into **Sigma rules that are validated against every recording in the
-repository** — the ones they must catch, and the ones where they must stay silent.
+**Public recordings of real Windows attacks, turned into Sigma rules that are validated against the recordings where
+they must stay silent as well as the ones they must catch.**
 
-This is the endpoint half of a pair. The [network project](https://github.com/junting9817/malware-traffic-analysis)
-analyses malicious traffic captures and writes Suricata rules; the coverage table below shows where the two meet.
+## In short
+
+| | |
+|---|---|
+| **What** | Sysmon and Windows Event Log recordings of real techniques, loaded into ClickHouse and analysed |
+| **Output** | Sigma rules — portable, and converted to SQL by a backend written here for validation |
+| **Discipline** | Every other recording is a control group. A rule that fires there fails the run |
+| **Note** | Nothing is ever executed. The recordings are logs of someone else's lab |
 
 ### The case the rules came from
 
@@ -14,23 +19,53 @@ attempt to disable AMSI and script block logging is itself logged, and it is the
 
 ```mermaid
 flowchart TD
-    E["explorer.exe<br/><small>a person opened a file</small>"] --> W["wscript.exe<br/><code>launcher.vbs</code>"]
-    W --> P["powershell.exe<br/><code>-noP -sta -w 1 -enc</code><br/><small>5,056 base64 chars</small>"]
-    P --> T["Disables AMSI and script block logging<br/><small>PowerShell 4104, severity WARNING —<br/>the only script block ever recorded</small>"]
-    T --> C["Downloads its agent<br/><code>hxxp://10.10.10[.]5/news.php</code><br/><small>RC4 in memory, never on disk</small>"]
+    E["explorer.exe<br/>a person opened a file"] --> W["wscript.exe<br/>launcher.vbs"]
+    W --> P["powershell.exe<br/>-noP -sta -w 1 -enc<br/>5,056 base64 chars"]
+    P --> T["Disables AMSI and script block logging<br/>PowerShell 4104, severity WARNING —<br/>the only script block ever recorded"]
+    T --> C["Downloads its agent<br/>RC4 in memory, never on disk"]
     C --> D["Fingerprints the host over WMI"]
-    D --> B["Beacons every 5s<br/><small>8 intervals, jitter 0.43s</small>"]
-    C --> Q["whoami.exe<br/><small>22s later: a person, not the script</small>"]
+    D --> B["Beacons every 5s<br/>8 intervals, jitter 0.43s"]
+    C --> Q["whoami.exe<br/>22s later: a person, not the script"]
 
-    classDef warn fill:#f7ecdc,stroke:#c07c1c,stroke-width:2px,color:#3a2a10;
+    classDef warn fill:#f7ecdc,stroke:#c07c1c,color:#3a2a10;
     classDef norm fill:#f2f4f7,stroke:#9aa5b4,color:#1b2027;
     class T warn;
     class E,W,P,C,D,B,Q norm;
 ```
 
-**What the rules key on** is the shape, not this campaign: a script host handing over to PowerShell, an encoded
-command line, and a script block naming the AMSI or logging fields it has to reference. The C2 address is base64
-*inside* the base64 command, so searching command lines for it finds nothing.
+**The rules key on the shape, not this campaign:** a script host handing over to PowerShell, an encoded command line,
+and a script block naming the AMSI or logging fields it has to reference. The C2 address is base64 *inside* the base64
+command, so searching command lines for it finds nothing.
+
+### The finding worth keeping
+
+Script block logging produced **one** event — the stager's own, at severity WARNING — then went quiet. Module logging
+kept recording for another 49 seconds, and is the only reason the WMI fingerprinting and the beacon appear in the
+write-up at all. A team that enables only the first loses the entire post-exploitation phase.
+
+## How a recording becomes a validated rule
+
+```mermaid
+flowchart LR
+    R["Recording<br/>Security-Datasets"] --> N["Normalise<br/>Sysmon 1 = Security 4688"]
+    N --> D["ClickHouse<br/>ep.win_events"]
+    D --> T["Triage<br/>trees · rare parents · LOLBins"]
+    T --> S["Sigma rule"]
+    S --> B["Sigma → SQL backend<br/>refuses what it cannot translate"]
+    B --> V{"Replay over<br/>every recording"}
+    V -->|"catches its own"| OK["PASS"]
+    V -->|"fires on a control"| FP["False-positive candidate"]
+
+    classDef bad fill:#f7e4e0,stroke:#b3391a,color:#3a1610;
+    classDef good fill:#e0ece6,stroke:#245f45,color:#12271e;
+    classDef norm fill:#eef0f3,stroke:#98a1af,color:#171a21;
+    class FP bad;
+    class OK good;
+    class R,N,D,T,S,B,V norm;
+```
+
+The backend **refuses anything it cannot translate faithfully** rather than guessing, because a silently mistranslated
+rule passes validation while detecting nothing.
 
 <!-- ep:stats -->
 | | |
@@ -95,7 +130,9 @@ Validation lives in [rules/expected.yaml](rules/expected.yaml) (what each rule m
 
 Navigator layers: [endpoint](rules/attack-coverage.json), [combined](rules/attack-coverage-combined.json).
 
-## How a technique is analysed
+<details>
+<summary><b>How a technique is analysed</b></summary>
+
 
 ```mermaid
 flowchart LR
@@ -122,13 +159,17 @@ each case changed is in [docs/lessons.md](docs/lessons.md).
 | [`validate-rules.sh`](scripts/validate-rules.sh) | Lints, runs every rule over every recording, reports false-positive candidates |
 | [`update-readme.py`](scripts/update-readme.py) | Regenerates the tables above and the ATT&CK layers |
 
+</details>
+
 ## Safety
 
 Every dataset is a recording made in someone else's lab: nothing is executed here, no Windows host is involved, and no
 attack tool is downloaded or run. Recordings stay on the data disk and never enter this repository — a pre-commit hook
 refuses EVTX files, archives and binaries by inspecting their content.
 
-## Reproducing a case
+<details>
+<summary><b>Reproducing a case</b></summary>
+
 
 ```bash
 scripts/apply-schema.sh                                              # once: create the ep database
@@ -143,6 +184,8 @@ scripts/update-readme.py
 
 ClickHouse runs in the network lab's container; this project only ever writes its own `ep` database.
 
+</details>
+
 ## Repository layout
 
 ```
@@ -152,3 +195,10 @@ schema/            ClickHouse DDL for the ep database
 scripts/           the pipeline above, with shared helpers in scripts/lib/
 datasets/          recordings — git-ignored, on the data disk
 ```
+
+---
+
+Part of a set: [network monitoring](https://github.com/junting9817/nsm-lab) ·
+[malware traffic](https://github.com/junting9817/malware-traffic-analysis) ·
+[honeypot reporting](https://github.com/junting9817/honeypot-report) ·
+[certificate transparency](https://github.com/junting9817/ct-lookalike-watch)
