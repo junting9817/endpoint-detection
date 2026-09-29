@@ -4,8 +4,33 @@ Detections written from public recordings of real attack techniques on Windows. 
 loaded into ClickHouse, analysed, and turned into **Sigma rules that are validated against every recording in the
 repository** — the ones they must catch, and the ones where they must stay silent.
 
-This is the endpoint half of a pair. The [network project](https://github.com/) analyses malicious traffic captures and
-writes Suricata rules; the coverage table below shows where the two meet.
+This is the endpoint half of a pair. The [network project](https://github.com/junting9817/malware-traffic-analysis)
+analyses malicious traffic captures and writes Suricata rules; the coverage table below shows where the two meet.
+
+### The case the rules came from
+
+An Empire VBS launcher, from double-click to beacon in 29 seconds. Amber is the moment worth detecting: the stager's
+attempt to disable AMSI and script block logging is itself logged, and it is the last script block the host recorded.
+
+```mermaid
+flowchart TD
+    E["explorer.exe<br/><small>a person opened a file</small>"] --> W["wscript.exe<br/><code>launcher.vbs</code>"]
+    W --> P["powershell.exe<br/><code>-noP -sta -w 1 -enc</code><br/><small>5,056 base64 chars</small>"]
+    P --> T["Disables AMSI and script block logging<br/><small>PowerShell 4104, severity WARNING —<br/>the only script block ever recorded</small>"]
+    T --> C["Downloads its agent<br/><code>hxxp://10.10.10[.]5/news.php</code><br/><small>RC4 in memory, never on disk</small>"]
+    C --> D["Fingerprints the host over WMI"]
+    D --> B["Beacons every 5s<br/><small>8 intervals, jitter 0.43s</small>"]
+    C --> Q["whoami.exe<br/><small>22s later: a person, not the script</small>"]
+
+    classDef warn fill:#f7ecdc,stroke:#c07c1c,stroke-width:2px,color:#3a2a10;
+    classDef norm fill:#f2f4f7,stroke:#9aa5b4,color:#1b2027;
+    class T warn;
+    class E,W,P,C,D,B,Q norm;
+```
+
+**What the rules key on** is the shape, not this campaign: a script host handing over to PowerShell, an encoded
+command line, and a script block naming the AMSI or logging fields it has to reference. The C2 address is base64
+*inside* the base64 command, so searching command lines for it finds nothing.
 
 <!-- ep:stats -->
 | | |
